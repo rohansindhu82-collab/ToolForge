@@ -90,6 +90,7 @@ export default function ToolWorkspace({ tool }: Props) {
         }
         const page = pdf.addPage([image.width,image.height]);
         page.drawImage(image,{x:0,y:0,width:image.width,height:image.height});
+        // Copy PDF bytes into an ArrayBuffer-compatible BlobPart for current TypeScript DOM types.
         downloadBlob(new Blob([new Uint8Array(await pdf.save()).buffer as ArrayBuffer],{type:'application/pdf'}),file.name.replace(/\.[^.]+$/,'')+'.pdf');
         setStatus('Created a PDF locally. Your image was not uploaded.'); return;
       }
