@@ -86,7 +86,7 @@ export default function ToolWorkspace({ tool }: Props) {
         const page=pdf.getPages()[0]; if(!page) throw new Error('This PDF has no pages.');
         const font=await pdf.embedFont(StandardFonts.HelveticaOblique);
         page.drawText(text.trim() || 'Signed digitally',{x:40,y:40,size:24,font,color:rgb(0.08,0.2,0.55)});
-        downloadBlob(new Blob([await pdf.save()],{type:'application/pdf'}),file.name.replace(/\.pdf$/i,'')+'-signed.pdf');
+        downloadBlob(new Blob([new Uint8Array(await pdf.save()).buffer as ArrayBuffer],{type:'application/pdf'}),file.name.replace(/\.pdf$/i,'')+'-signed.pdf');
         setStatus('Added a typed signature mark to the first page. This is not a certificate-backed digital signature.');return;
       }
       setStatus('This processor is not enabled yet. No file was uploaded and no conversion was claimed.');
