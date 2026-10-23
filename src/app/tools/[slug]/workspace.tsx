@@ -236,7 +236,8 @@ export default function ToolWorkspace({ tool }: Props) {
     } catch(error){setStatus(error instanceof Error?error.message:'Could not generate this SEO output.');}
   }
   function generatePassword() { const size = Math.max(8, Math.min(128, Number(length) || 16)); const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()-_=+'; const values = new Uint32Array(size); crypto.getRandomValues(values); setPassword(Array.from(values, (value) => chars[value % chars.length]).join('')); setStatus('Generated locally with your browser’s secure random generator.'); }
-  const seoTool = ['meta-tag-generator','google-serp-preview','title-tag-checker','meta-description-checker','url-slug-generator','robots-txt-generator','xml-sitemap-generator','schema-markup-generator','open-graph-generator','faq-schema-generator'].includes(tool.slug);\n  const textTool = ['word-counter', 'case-converter', 'json-formatter', 'base64-tool'].includes(tool.slug);
+  const seoTool = ['meta-tag-generator','google-serp-preview','title-tag-checker','meta-description-checker','url-slug-generator','robots-txt-generator','xml-sitemap-generator','schema-markup-generator','open-graph-generator','faq-schema-generator'].includes(tool.slug);
+  const textTool = ['word-counter', 'case-converter', 'json-formatter', 'base64-tool'].includes(tool.slug);
   const fileTool = ['pdf-merger','pdf-splitter','pdf-page-extractor','pdf-rotate','image-compressor', 'image-resizer', 'image-converter', 'image-to-pdf', 'video-to-audio', 'video-clipper', 'video-reverser', 'video-looper', 'pdf-to-text', 'pdf-resizer', 'pdf-sign'].includes(tool.slug);
   return <section className="shell"><div className="workspace">
     {seoTool&&<div className="seo-workspace">
