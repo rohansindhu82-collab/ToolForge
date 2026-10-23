@@ -1,4 +1,4 @@
-export type ToolCategory = 'Video' | 'Audio' | 'PDF' | 'Images' | 'Text' | 'Developer' | 'Everyday';
+export type ToolCategory = 'Video' | 'Audio' | 'PDF' | 'Images' | 'Text' | 'Developer' | 'Everyday' | 'SEO';
 
 export type ToolDefinition = {
   slug: string;
@@ -9,9 +9,19 @@ export type ToolDefinition = {
   popular?: boolean;
 };
 
-export const categories: ToolCategory[] = ['Video', 'Audio', 'PDF', 'Images', 'Text', 'Developer', 'Everyday'];
+export const categories: ToolCategory[] = ['Video', 'Audio', 'PDF', 'Images', 'Text', 'Developer', 'Everyday', 'SEO'];
 
 export const tools: ToolDefinition[] = [
+  { slug: 'meta-tag-generator', name: 'Meta Tag Generator', category: 'SEO', description: 'Generate copy-ready SEO title, description, canonical and robots meta tags.', kind: 'text', popular: true },
+  { slug: 'google-serp-preview', name: 'Google SERP Preview', category: 'SEO', description: 'Preview a search snippet and check title and description lengths.', kind: 'text', popular: true },
+  { slug: 'title-tag-checker', name: 'Title Tag Length Checker', category: 'SEO', description: 'Check title tag character length and preview its search result headline.', kind: 'text', popular: true },
+  { slug: 'meta-description-checker', name: 'Meta Description Checker', category: 'SEO', description: 'Count meta description characters and review a search snippet preview.', kind: 'text', popular: true },
+  { slug: 'url-slug-generator', name: 'URL Slug Generator', category: 'SEO', description: 'Turn a title into a clean, readable, SEO-friendly URL slug.', kind: 'text' },
+  { slug: 'robots-txt-generator', name: 'Robots.txt Generator', category: 'SEO', description: 'Create a robots.txt starter file with crawler rules and sitemap location.', kind: 'text', popular: true },
+  { slug: 'xml-sitemap-generator', name: 'XML Sitemap Generator', category: 'SEO', description: 'Build an XML sitemap from URLs you provide and download it.', kind: 'text', popular: true },
+  { slug: 'schema-markup-generator', name: 'Schema Markup Generator', category: 'SEO', description: 'Generate JSON-LD structured data for websites, articles and local businesses.', kind: 'text', popular: true },
+  { slug: 'open-graph-generator', name: 'Open Graph Meta Generator', category: 'SEO', description: 'Generate social sharing meta tags for Open Graph and Twitter cards.', kind: 'text' },
+  { slug: 'faq-schema-generator', name: 'FAQ Schema Generator', category: 'SEO', description: 'Turn FAQ questions and answers into JSON-LD structured data.', kind: 'text' }
   { slug: 'video-to-audio', name: 'Video to Audio', category: 'Audio', description: 'Extract the audio track from a video file in your browser.', kind: 'video', popular: true },
   { slug: 'video-clipper', name: 'Video Clipper', category: 'Video', description: 'Trim a video to the exact section you need.', kind: 'video', popular: true },
   { slug: 'video-reverser', name: 'Video Reverser', category: 'Video', description: 'Reverse a video clip locally in your browser.', kind: 'video' },
