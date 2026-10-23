@@ -14,7 +14,7 @@ function parsePageRanges(input: string, total: number): number[] { const picked 
 type Props = { tool: ToolDefinition };
 export default function ToolWorkspace({ tool }: Props) {
   const [text, setText] = useState(''); const [result, setResult] = useState(''); const [file, setFile] = useState<File | null>(null); const [quality, setQuality] = useState('0.75'); const [outputFormat, setOutputFormat] = useState<'image/png' | 'image/jpeg' | 'image/webp'>('image/webp'); const [width, setWidth] = useState(''); const [height, setHeight] = useState(''); const [gst, setGst] = useState('18'); const [amount, setAmount] = useState('1000'); const [rate, setRate] = useState('10'); const [months, setMonths] = useState('12'); const [length, setLength] = useState('16'); const [password, setPassword] = useState(''); const [downloadUrl, setDownloadUrl] = useState(''); const [downloadName, setDownloadName] = useState('toolforge-result');
-  const [status, setStatus] = useState(''); const [selectedFiles,setSelectedFiles]=useState<File[]>([]); const [pageRange,setPageRange]=useState('1-3'); const [pagesPerFile,setPagesPerFile]=useState('1'); const [rotation,setRotation]=useState('90'); const [base64Mode,setBase64Mode]=useState<'encode'|'decode'>('encode'); const [percentage,setPercentage]=useState('10'); const [baseAmount,setBaseAmount]=useState('100'); const [birthDate,setBirthDate]=useState(''); const [seoTitle,setSeoTitle]=useState(''); const [seoDescription,setSeoDescription]=useState(''); const [seoUrl,setSeoUrl]=useState('https://example.com/page'); const [siteName,setSiteName]=useState(''); const [slugText,setSlugText]=useState(''); const [robotsPreset,setRobotsPreset]=useState<'all'|'none'|'images'|'noai'>('all'); const [sitemapUrls,setSitemapUrls]=useState('https://example.com/\\nhttps://example.com/about'); const [schemaKind,setSchemaKind]=useState<'WebSite'|'Organization'|'Article'|'LocalBusiness'|'Product'>('WebSite'); const [schemaName,setSchemaName]=useState(''); const [schemaDescription,setSchemaDescription]=useState(''); const [faqQuestion,setFaqQuestion]=useState(''); const [faqAnswer,setFaqAnswer]=useState(''); const [qrInput,setQrInput]=useState(''); const [qrDataUrl,setQrDataUrl]=useState(''); const [clipStart,setClipStart]=useState('0'); const [clipEnd,setClipEnd]=useState('10'); const [loopCount,setLoopCount]=useState('3');
+  const [status, setStatus] = useState(''); const [selectedFiles,setSelectedFiles]=useState<File[]>([]); const [pageRange,setPageRange]=useState('1-3'); const [pagesPerFile,setPagesPerFile]=useState('1'); const [rotation,setRotation]=useState('90'); const [base64Mode,setBase64Mode]=useState<'encode'|'decode'>('encode'); const [percentage,setPercentage]=useState('10'); const [baseAmount,setBaseAmount]=useState('100'); const [birthDate,setBirthDate]=useState(''); const [seoTitle,setSeoTitle]=useState(''); const [seoDescription,setSeoDescription]=useState(''); const [seoUrl,setSeoUrl]=useState('https://example.com/page'); const [siteName,setSiteName]=useState(''); const [slugText,setSlugText]=useState(''); const [robotsPreset,setRobotsPreset]=useState<'all'|'none'|'images'|'noai'>('all'); const [sitemapUrls,setSitemapUrls]=useState('https://example.com/\nhttps://example.com/about'); const [schemaKind,setSchemaKind]=useState<'WebSite'|'Organization'|'Article'|'LocalBusiness'|'Product'>('WebSite'); const [schemaName,setSchemaName]=useState(''); const [schemaDescription,setSchemaDescription]=useState(''); const [faqQuestion,setFaqQuestion]=useState(''); const [faqAnswer,setFaqAnswer]=useState(''); const [qrInput,setQrInput]=useState(''); const [qrDataUrl,setQrDataUrl]=useState(''); const [clipStart,setClipStart]=useState('0'); const [clipEnd,setClipEnd]=useState('10'); const [loopCount,setLoopCount]=useState('3');
   const stats = useMemo(() => ({ words: text.trim() ? text.trim().split(/\s+/).length : 0, chars: text.length, sentences: text.trim() ? (text.trim().match(/[.!?]+(?=\s|$)/g) || []).length : 0 }), [text]);
   function downloadBlob(blob: Blob, name: string) { const url = URL.createObjectURL(blob); setDownloadUrl(url); setDownloadName(name); setStatus('Your file is ready. Use the download link below.'); }
   async function handleFileAction() {
@@ -188,23 +188,23 @@ export default function ToolWorkspace({ tool }: Props) {
     const validUrl=(value:string)=>{try{return new URL(value).toString();}catch{return ''; }};
     try {
       if(tool.slug==='url-slug-generator'){
-        const slug=slugText.trim().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+        const slug=slugText.trim().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
         if(!slug)throw new Error('Enter a title or phrase first.');
         setResult(slug);setStatus('Generated a clean URL slug. Review it for accuracy before publishing.');return;
       }
       if(tool.slug==='robots-txt-generator'){
-        const sitemap=validUrl(seoUrl);let output='User-agent: *\\n';
-        if(robotsPreset==='none')output+='Disallow: /\\n';
-        else {output+='Allow: /\\n';if(robotsPreset==='images')output+='Disallow: /*.jpg$\\nDisallow: /*.png$\\n';if(robotsPreset==='noai')output+='# Review individual crawler names and applicable policies before using AI crawler rules.\\n';}
-        if(sitemap)output+='\\nSitemap: '+sitemap+'\\n';
+        const sitemap=validUrl(seoUrl);let output='User-agent: *\n';
+        if(robotsPreset==='none')output+='Disallow: /\n';
+        else {output+='Allow: /\n';if(robotsPreset==='images')output+='Disallow: /*.jpg$\nDisallow: /*.png$\n';if(robotsPreset==='noai')output+='# Review individual crawler names and applicable policies before using AI crawler rules.\n';}
+        if(sitemap)output+='\nSitemap: '+sitemap+'\n';
         setResult(output);setStatus('Generated a robots.txt draft. Check it against your site and hosting rules before deployment.');return;
       }
       if(tool.slug==='xml-sitemap-generator'){
-        const urls=sitemapUrls.split(/\\r?\\n/).map(v=>v.trim()).filter(Boolean);
+        const urls=sitemapUrls.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);
         if(!urls.length)throw new Error('Enter at least one absolute URL, one per line.');
         const normalized=urls.map(value=>{const u=validUrl(value);if(!u||!/^https?:/.test(u))throw new Error('Invalid absolute URL: '+value);return u;});
         const unique=[...new Set(normalized)];
-        setResult('<?xml version="1.0" encoding="UTF-8"?>\\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n'+unique.map(u=>'  <url><loc>'+u.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</loc></url>').join('\\n')+'\\n</urlset>');
+        setResult('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+unique.map(u=>'  <url><loc>'+u.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</loc></url>').join('\n')+'\n</urlset>');
         setStatus('Generated XML for '+unique.length+' unique URLs. This tool does not crawl your website automatically.');return;
       }
       if(tool.slug==='schema-markup-generator'){
@@ -225,11 +225,11 @@ export default function ToolWorkspace({ tool }: Props) {
       if(!description&&tool.slug!=='title-tag-checker')throw new Error('Enter a meta description.');
       if(['meta-tag-generator','open-graph-generator'].includes(tool.slug)&&!url)throw new Error('Enter a valid absolute page URL.');
       if(tool.slug==='meta-tag-generator'){
-        setResult('<title>'+esc(title)+'</title>\\n<meta name="description" content="'+esc(description)+'">\\n<link rel="canonical" href="'+esc(url)+'">\\n<meta name="robots" content="index,follow">');
+        setResult('<title>'+esc(title)+'</title>\n<meta name="description" content="'+esc(description)+'">\n<link rel="canonical" href="'+esc(url)+'">\n<meta name="robots" content="index,follow">');
       } else if(tool.slug==='open-graph-generator'){
-        setResult('<meta property="og:type" content="website">\\n<meta property="og:title" content="'+esc(title)+'">\\n<meta property="og:description" content="'+esc(description)+'">\\n<meta property="og:url" content="'+esc(url)+'">\\n<meta property="og:site_name" content="'+esc(siteName||'Website')+'">\\n<meta name="twitter:card" content="summary_large_image">\\n<meta name="twitter:title" content="'+esc(title)+'">\\n<meta name="twitter:description" content="'+esc(description)+'">');
+        setResult('<meta property="og:type" content="website">\n<meta property="og:title" content="'+esc(title)+'">\n<meta property="og:description" content="'+esc(description)+'">\n<meta property="og:url" content="'+esc(url)+'">\n<meta property="og:site_name" content="'+esc(siteName||'Website')+'">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="'+esc(title)+'">\n<meta name="twitter:description" content="'+esc(description)+'">');
       } else {
-        setResult('Title: '+(title||'(not provided)')+'\\nTitle length: '+title.length+' characters\\nDescription: '+(description||'(not provided)')+'\\nDescription length: '+description.length+' characters\\nPage URL: '+(url||'(add a valid URL for a full preview)'));
+        setResult('Title: '+(title||'(not provided)')+'\nTitle length: '+title.length+' characters\nDescription: '+(description||'(not provided)')+'\nDescription length: '+description.length+' characters\nPage URL: '+(url||'(add a valid URL for a full preview)'));
       }
       setStatus('Updated locally. Character counts are guidelines, not fixed Google display limits.');
     } catch(error){setStatus(error instanceof Error?error.message:'Could not generate this SEO output.');}
