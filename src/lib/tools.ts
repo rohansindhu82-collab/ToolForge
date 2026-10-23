@@ -18,6 +18,7 @@ export const tools: ToolDefinition[] = [
   { slug: 'video-looper', name: 'Video Looper', category: 'Video', description: 'Repeat a clip to create a longer loop.', kind: 'video' },
   { slug: 'image-to-pdf', name: 'Image to PDF', category: 'PDF', description: 'Turn images into a downloadable PDF document.', kind: 'image', popular: true },
   { slug: 'pdf-to-text', name: 'PDF Text Extractor', category: 'PDF', description: 'Extract selectable text from PDF documents.', kind: 'pdf', popular: true },
+  { slug: 'pdf-resizer', name: 'PDF Page Resizer', category: 'PDF', description: 'Resize PDF page dimensions while preserving page content.', kind: 'pdf' },
   { slug: 'pdf-sign', name: 'Sign PDF', category: 'PDF', description: 'Place a simple drawn signature on a PDF.', kind: 'pdf' },
   { slug: 'image-compressor', name: 'Image Compressor', category: 'Images', description: 'Reduce image file size with adjustable quality.', kind: 'image', popular: true },
   { slug: 'image-resizer', name: 'Image Resizer', category: 'Images', description: 'Resize images to custom pixel dimensions.', kind: 'image' },
