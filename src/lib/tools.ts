@@ -1,0 +1,36 @@
+export type ToolCategory = 'Video' | 'Audio' | 'PDF' | 'Images' | 'Text' | 'Developer' | 'Everyday';
+
+export type ToolDefinition = {
+  slug: string;
+  name: string;
+  category: ToolCategory;
+  description: string;
+  kind: 'video' | 'audio' | 'image' | 'pdf' | 'text' | 'utility';
+  popular?: boolean;
+};
+
+export const categories: ToolCategory[] = ['Video', 'Audio', 'PDF', 'Images', 'Text', 'Developer', 'Everyday'];
+
+export const tools: ToolDefinition[] = [
+  { slug: 'video-to-audio', name: 'Video to Audio', category: 'Audio', description: 'Extract the audio track from a video file in your browser.', kind: 'video', popular: true },
+  { slug: 'video-clipper', name: 'Video Clipper', category: 'Video', description: 'Trim a video to the exact section you need.', kind: 'video', popular: true },
+  { slug: 'video-reverser', name: 'Video Reverser', category: 'Video', description: 'Reverse a video clip locally in your browser.', kind: 'video' },
+  { slug: 'video-looper', name: 'Video Looper', category: 'Video', description: 'Repeat a clip to create a longer loop.', kind: 'video' },
+  { slug: 'image-to-pdf', name: 'Image to PDF', category: 'PDF', description: 'Turn images into a downloadable PDF document.', kind: 'image', popular: true },
+  { slug: 'pdf-to-text', name: 'PDF Text Extractor', category: 'PDF', description: 'Extract selectable text from PDF documents.', kind: 'pdf', popular: true },
+  { slug: 'pdf-sign', name: 'Sign PDF', category: 'PDF', description: 'Place a simple drawn signature on a PDF.', kind: 'pdf' },
+  { slug: 'image-compressor', name: 'Image Compressor', category: 'Images', description: 'Reduce image file size with adjustable quality.', kind: 'image', popular: true },
+  { slug: 'image-resizer', name: 'Image Resizer', category: 'Images', description: 'Resize images to custom pixel dimensions.', kind: 'image' },
+  { slug: 'image-converter', name: 'Image Converter', category: 'Images', description: 'Convert images to PNG, JPEG, or WebP.', kind: 'image' },
+  { slug: 'word-counter', name: 'Word Counter', category: 'Text', description: 'Count words, characters, sentences, and reading time.', kind: 'text', popular: true },
+  { slug: 'case-converter', name: 'Case Converter', category: 'Text', description: 'Convert text to uppercase, lowercase, and title case.', kind: 'text' },
+  { slug: 'json-formatter', name: 'JSON Formatter', category: 'Developer', description: 'Format and validate JSON with readable errors.', kind: 'text' },
+  { slug: 'password-generator', name: 'Password Generator', category: 'Everyday', description: 'Generate a strong random password on your device.', kind: 'utility', popular: true },
+  { slug: 'qr-generator', name: 'QR Code Generator', category: 'Everyday', description: 'Create a QR code for a link or short message.', kind: 'utility' },
+  { slug: 'gst-calculator', name: 'GST Calculator', category: 'Everyday', description: 'Calculate GST amounts and inclusive or exclusive prices.', kind: 'utility' },
+  { slug: 'emi-calculator', name: 'EMI Calculator', category: 'Everyday', description: 'Estimate monthly loan payments and total interest.', kind: 'utility' },
+];
+
+export function getTool(slug: string) {
+  return tools.find((tool) => tool.slug === slug);
+}
