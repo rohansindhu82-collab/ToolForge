@@ -6,7 +6,10 @@ import type { ToolDefinition } from '@/lib/tools';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import QRCode from 'qrcode';
+import JSZip from 'jszip';
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url).toString();
+
+function parsePageRanges(input: string, total: number): number[] { const picked = new Set<number>(); for (const part of input.split(',').map(s => s.trim()).filter(Boolean)) { const match = part.match(/^(\d+)(?:\s*-\s*(\d+))?$/); if (!match) throw new Error('Use page numbers like 1-3,5.'); const first = Number(match[1]); const last = Number(match[2] || match[1]); if (first < 1 || last < first || last > total) throw new Error('Page range is outside this PDF (1–' + total + ').'); for (let n = first; n <= last; n++) picked.add(n - 1); } return [...picked].sort((a,b) => a-b); }
 
 type Props = { tool: ToolDefinition };
 export default function ToolWorkspace({ tool }: Props) {
@@ -39,10 +42,9 @@ export default function ToolWorkspace({ tool }: Props) {
           const out=await PDFDocument.create();(await out.copyPages(pdf,indices)).forEach(p=>out.addPage(p));
           const bytes=new Uint8Array(await out.save());downloadBlob(new Blob([bytes.buffer as ArrayBuffer],{type:'application/pdf'}),file.name.replace(/\.pdf$/i,'')+'-pages.pdf');setStatus('Extracted '+indices.length+' page(s) into a new PDF.');return;
         }
-        const chunkSize=Math.max(1,Math.min(100,Number(pagesPerFile)||1));const total=pdf.getPageCount();const parts=Math.ceil(total/chunkSize);
-        if(parts>1)throw new Error('This browser workspace exports one file per action. Choose a chunk size at least as large as the document, or use Page Extractor to download a specific range.');
-        const out=await PDFDocument.create();(await out.copyPages(pdf,pdf.getPageIndices())).forEach(p=>out.addPage(p));
-        const bytes=new Uint8Array(await out.save());downloadBlob(new Blob([bytes.buffer as ArrayBuffer],{type:'application/pdf'}),file.name.replace(/\.pdf$/i,'')+'-split.pdf');setStatus('Created a PDF copy with '+out.getPageCount()+' pages. To create multiple parts, use the page extractor for each range.');return;
+        const chunkSize=Math.max(1,Math.min(100,Number(pagesPerFile)||1));const total=pdf.getPageCount();const zip=new JSZip();let parts=0;
+        for(let start=0;start<total;start+=chunkSize){const out=await PDFDocument.create();const ids=Array.from({length:Math.min(chunkSize,total-start)},(_,i)=>start+i);(await out.copyPages(pdf,ids)).forEach(p=>out.addPage(p));zip.file('part-'+String(parts+1).padStart(2,'0')+'.pdf',await out.save());parts++;}
+        const blob=await zip.generateAsync({type:'blob'});downloadBlob(blob,file.name.replace(/\.pdf$/i,'')+'-split.zip');setStatus('Split '+total+' pages into '+parts+' PDF files in a ZIP archive.');return;
       }
       if (['image-compressor','image-resizer','image-converter'].includes(tool.slug)) {
         if (!file.type.startsWith('image/')) { setStatus('Please choose a supported image file.'); return; }
