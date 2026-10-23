@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { ToolDefinition } from '@/lib/tools';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 type Props = { tool: ToolDefinition };
 export default function ToolWorkspace({ tool }: Props) {
@@ -12,15 +14,72 @@ export default function ToolWorkspace({ tool }: Props) {
   function downloadBlob(blob: Blob, name: string) { const url = URL.createObjectURL(blob); setDownloadUrl(url); setDownloadName(name); setStatus('Your file is ready. Use the download link below.'); }
   async function handleFileAction() {
     if (!file) { setStatus('Choose a file first.'); return; }
+    setStatus('Processing locally in your browser…');
     try {
-      if (tool.slug === 'image-compressor' || tool.slug === 'image-resizer' || tool.slug === 'image-converter') {
+      if (['image-compressor','image-resizer','image-converter'].includes(tool.slug)) {
         if (!file.type.startsWith('image/')) { setStatus('Please choose a supported image file.'); return; }
         const image = new Image(); const source = URL.createObjectURL(file);
-        image.onload = () => { const w = Math.max(1, Number(width) || image.naturalWidth); const h = Math.max(1, Number(height) || Math.round(image.naturalHeight * w / image.naturalWidth)); const canvas = document.createElement('canvas'); canvas.width = tool.slug === 'image-compressor' ? image.naturalWidth : w; canvas.height = tool.slug === 'image-compressor' ? image.naturalHeight : h; const ctx = canvas.getContext('2d'); if (!ctx) { setStatus('Your browser could not create an image canvas.'); URL.revokeObjectURL(source); return; } ctx.drawImage(image, 0, 0, canvas.width, canvas.height); const mime = tool.slug === 'image-converter' ? 'image/webp' : 'image/jpeg'; canvas.toBlob((blob) => { URL.revokeObjectURL(source); if (!blob) { setStatus('Could not create the output image. Try another file.'); return; } downloadBlob(blob, `${file.name.replace(/\.[^.]+$/, '')}-${tool.slug}.${mime === 'image/webp' ? 'webp' : 'jpg'}`); setStatus(`Processed locally: ${canvas.width} × ${canvas.height}, ${(blob.size / 1024).toFixed(1)} KB. Original: ${(file.size / 1024).toFixed(1)} KB.`); }, mime, Number(quality)); }; image.onerror = () => { URL.revokeObjectURL(source); setStatus('Could not read this image format.'); }; image.src = source; return;
+        image.onload = () => {
+          const w = Math.min(12000, Math.max(1, Number(width) || image.naturalWidth));
+          const h = Math.min(12000, Math.max(1, Number(height) || Math.round(image.naturalHeight * w / image.naturalWidth)));
+          const canvas = document.createElement('canvas');
+          canvas.width = tool.slug === 'image-compressor' ? image.naturalWidth : w;
+          canvas.height = tool.slug === 'image-compressor' ? image.naturalHeight : h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { setStatus('Your browser could not create an image canvas.'); URL.revokeObjectURL(source); return; }
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          const mime = tool.slug === 'image-converter' ? 'image/webp' : 'image/jpeg';
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(source);
+            if (!blob) { setStatus('Could not create the output image. Try another file.'); return; }
+            downloadBlob(blob, file.name.replace(/\.[^.]+$/, '') + '-' + tool.slug + '.' + (mime === 'image/webp' ? 'webp' : 'jpg'));
+            setStatus('Processed locally: ' + canvas.width + ' × ' + canvas.height + ', ' + (blob.size / 1024).toFixed(1) + ' KB. Original: ' + (file.size / 1024).toFixed(1) + ' KB.');
+          }, mime, Number(quality));
+        };
+        image.onerror = () => { URL.revokeObjectURL(source); setStatus('Could not read this image format.'); };
+        image.src = source; return;
       }
-      if (tool.slug === 'image-to-pdf') { setStatus('Image-to-PDF export is not enabled in this first build yet. Your file was not uploaded.'); return; }
-      setStatus('This tool needs its dedicated media/PDF processor, which is not enabled in this first build. No file has been uploaded.');
-    } catch { setStatus('Something went wrong while processing this file. Please try another file.'); }
+      if (tool.slug === 'image-to-pdf') {
+        if (!file.type.startsWith('image/')) { setStatus('Choose a JPG, PNG, or another browser-supported image.'); return; }
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const pdf = await PDFDocument.create();
+        let image;
+        if (file.type === 'image/png') image = await pdf.embedPng(bytes);
+        else if (['image/jpeg','image/jpg'].includes(file.type)) image = await pdf.embedJpg(bytes);
+        else {
+          const bitmap = await createImageBitmap(file);
+          const canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;
+          const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Could not read image.');
+          ctx.drawImage(bitmap,0,0); bitmap.close();
+          const blob = await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Image conversion failed.')),'image/jpeg',0.94));
+          image = await pdf.embedJpg(await blob.arrayBuffer());
+        }
+        const page = pdf.addPage([image.width,image.height]);
+        page.drawImage(image,{x:0,y:0,width:image.width,height:image.height});
+        downloadBlob(new Blob([await pdf.save()],{type:'application/pdf'}),file.name.replace(/\.[^.]+$/,'')+'.pdf');
+        setStatus('Created a PDF locally. Your image was not uploaded.'); return;
+      }
+      if (tool.slug === 'pdf-to-text') {
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) { setStatus('Choose a PDF document.'); return; }
+        const pdf = await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+        const pages:string[]=[];
+        for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const textContent=await page.getTextContent();pages.push('--- Page '+i+' ---\n'+textContent.items.map((item:any)=>'str' in item?item.str:'').join(' '));}
+        const output=pages.join('\n\n');
+        if(!output.replace(/--- Page \d+ ---/g,'').trim()){setStatus('No selectable text found. This PDF may contain scanned images and needs OCR.');return;}
+        downloadBlob(new Blob([output],{type:'text/plain;charset=utf-8'}),file.name.replace(/\.pdf$/i,'')+'.txt');
+        setResult(output);setStatus('Extracted text from '+pdf.numPages+' page(s). Scanned-image OCR is not included.');return;
+      }
+      if (tool.slug === 'pdf-sign') {
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) { setStatus('Choose a PDF document.'); return; }
+        const pdf=await PDFDocument.load(await file.arrayBuffer());
+        const page=pdf.getPages()[0]; if(!page) throw new Error('This PDF has no pages.');
+        const font=await pdf.embedFont(StandardFonts.HelveticaOblique);
+        page.drawText(text.trim() || 'Signed digitally',{x:40,y:40,size:24,font,color:rgb(0.08,0.2,0.55)});
+        downloadBlob(new Blob([await pdf.save()],{type:'application/pdf'}),file.name.replace(/\.pdf$/i,'')+'-signed.pdf');
+        setStatus('Added a typed signature mark to the first page. This is not a certificate-backed digital signature.');return;
+      }
+      setStatus('This processor is not enabled yet. No file was uploaded and no conversion was claimed.');
+    } catch (error) { setStatus('Could not process this file: '+(error instanceof Error ? error.message : 'Please check the file and try again.')); }
   }
   function runTextAction() {
     try {
@@ -33,11 +92,11 @@ export default function ToolWorkspace({ tool }: Props) {
   const textTool = ['word-counter', 'case-converter', 'json-formatter'].includes(tool.slug);
   const fileTool = ['image-compressor', 'image-resizer', 'image-converter', 'image-to-pdf', 'video-to-audio', 'video-clipper', 'video-reverser', 'video-looper', 'pdf-to-text', 'pdf-sign'].includes(tool.slug);
   return <section className="shell"><div className="workspace">
-    {textTool && <><label className="field" htmlFor="tool-input">{tool.slug === 'json-formatter' ? 'JSON input' : 'Your text'}</label><textarea id="tool-input" className="textarea" placeholder={tool.slug === 'json-formatter' ? '{ "hello": "world" }' : 'Type or paste your text here…'} value={text} onChange={(e)=>setText(e.target.value)}/>{tool.slug==='word-counter'&&<div className="trustrow" style={{justifyContent:'flex-start',marginTop:12}}><span>{stats.words} words</span><span>{stats.chars} characters</span><span>{stats.sentences} sentences</span></div>}<div className="actionrow"><button className="pillbtn dark" onClick={runTextAction}>{tool.slug==='json-formatter'?'Format & validate':tool.slug==='case-converter'?'Convert case':'Analyze text'}</button><button className="pillbtn" onClick={()=>{setText('');setResult('');setStatus('');}}>Clear</button>{result&&<button className="pillbtn" onClick={()=>navigator.clipboard.writeText(result).then(()=>setStatus('Copied to clipboard.')).catch(()=>setStatus('Clipboard access is unavailable in this browser.'))}>Copy result</button>}</div>{result&&<div className="result" aria-live="polite">{result}</div>}</>}
+    {(textTool || tool.slug === 'pdf-sign') && <><label className="field" htmlFor="tool-input">{tool.slug === 'json-formatter' ? 'JSON input' : 'Your text'}</label><textarea id="tool-input" className="textarea" placeholder={tool.slug === 'json-formatter' ? '{ "hello": "world" }' : 'Type or paste your text here…'} value={text} onChange={(e)=>setText(e.target.value)}/>{tool.slug==='word-counter'&&<div className="trustrow" style={{justifyContent:'flex-start',marginTop:12}}><span>{stats.words} words</span><span>{stats.chars} characters</span><span>{stats.sentences} sentences</span></div>}<div className="actionrow"><button className="pillbtn dark" onClick={runTextAction}>{tool.slug==='json-formatter'?'Format & validate':tool.slug==='case-converter'?'Convert case':tool.slug==='pdf-sign'?'Use as signature':'Analyze text'}</button><button className="pillbtn" onClick={()=>{setText('');setResult('');setStatus('');}}>Clear</button>{result&&<button className="pillbtn" onClick={()=>navigator.clipboard.writeText(result).then(()=>setStatus('Copied to clipboard.')).catch(()=>setStatus('Clipboard access is unavailable in this browser.'))}>Copy result</button>}</div>{result&&<div className="result" aria-live="polite">{result}</div>}</>}
     {fileTool && <><div className="dropzone"><div style={{fontSize:28,marginBottom:12}}>↥</div><h2>Choose a file to get started</h2><p>Files are selected locally in your browser. Nothing is uploaded by this workspace.</p><input className="fileinput" type="file" accept={tool.kind==='image'?'image/*':tool.kind==='pdf'?'.pdf':'video/*,audio/*'} onChange={(e)=>{setFile(e.target.files?.[0]||null);setStatus('');setDownloadUrl('');}}/>{file&&<p style={{marginTop:14}}>{file.name} · {(file.size/1024/1024).toFixed(2)} MB</p>}</div>
       {['image-compressor','image-converter'].includes(tool.slug)&&<><label className="field" htmlFor="quality">Output quality: {Math.round(Number(quality)*100)}%</label><input id="quality" type="range" min="0.2" max="1" step="0.05" value={quality} onChange={(e)=>setQuality(e.target.value)} style={{width:'100%'}}/></>}
       {tool.slug==='image-resizer'&&<div style={{display:'flex',gap:12}}><div style={{flex:1}}><label className="field" htmlFor="width">Width (px)</label><input className="textinput" id="width" type="number" min="1" max="12000" value={width} onChange={(e)=>setWidth(e.target.value)} placeholder="e.g. 1200"/></div><div style={{flex:1}}><label className="field" htmlFor="height">Height (px)</label><input className="textinput" id="height" type="number" min="1" max="12000" value={height} onChange={(e)=>setHeight(e.target.value)} placeholder="Auto if empty"/></div></div>}
-      <div className="actionrow"><button className="pillbtn dark" onClick={handleFileAction}>{tool.slug.startsWith('image-')?'Process image':'Check tool availability'}</button>{downloadUrl&&<a className="pillbtn" href={downloadUrl} download={downloadName}>Download result ↓</a>}</div><p className="hint">{['image-compressor','image-resizer','image-converter'].includes(tool.slug)?'Supported formats depend on your browser. Output may be JPEG or WebP; transparent backgrounds can be lost when converting to JPEG.':'This tool is listed in the ToolForge catalogue, but its full processor is not enabled yet. We show this clearly rather than pretending a conversion happened.'}</p></>}
+      <div className="actionrow"><button className="pillbtn dark" onClick={handleFileAction}>{tool.slug.startsWith('image-')?'Process image':tool.slug==='pdf-to-text'?'Extract text':tool.slug==='pdf-sign'?'Add signature':'Check tool availability'}</button>{downloadUrl&&<a className="pillbtn" href={downloadUrl} download={downloadName}>Download result ↓</a>}</div><p className="hint">{['image-compressor','image-resizer','image-converter','image-to-pdf','pdf-to-text','pdf-sign'].includes(tool.slug)?'Processed in your browser. PDF text extraction works for selectable text; scanned PDFs need OCR. Typed PDF signing is a visual mark, not a certificate-backed digital signature.':'This tool is listed in the ToolForge catalogue, but its full processor is not enabled yet. We show this clearly rather than pretending a conversion happened.'}</p></>}
     {tool.slug==='password-generator'&&<><label className="field" htmlFor="pw-length">Password length</label><input id="pw-length" className="textinput" type="number" min="8" max="128" value={length} onChange={(e)=>setLength(e.target.value)}/><div className="actionrow"><button className="pillbtn dark" onClick={generatePassword}>Generate password</button>{password&&<button className="pillbtn" onClick={()=>navigator.clipboard.writeText(password).then(()=>setStatus('Password copied.')).catch(()=>setStatus('Clipboard access is unavailable.'))}>Copy password</button>}</div>{password&&<div className="result">{password}</div>}<p className="hint">Generated on your device using the Web Crypto API. Avoid reusing passwords across accounts.</p></>}
     {tool.slug==='gst-calculator'&&<><label className="field" htmlFor="gst-amount">Amount (₹)</label><input id="gst-amount" className="textinput" type="number" min="0" value={amount} onChange={(e)=>setAmount(e.target.value)}/><label className="field" htmlFor="gst-rate">GST rate</label><select id="gst-rate" className="textinput" value={gst} onChange={(e)=>setGst(e.target.value)}>{['0','5','12','18','28'].map(v=><option key={v} value={v}>{v}%</option>)}</select><div className="result">GST amount: ₹{(Number(amount)*Number(gst)/100).toFixed(2)}\nTotal including GST: ₹{(Number(amount)*(1+Number(gst)/100)).toFixed(2)}</div></>}
     {tool.slug==='emi-calculator'&&<><label className="field" htmlFor="loan-amount">Loan amount (₹)</label><input id="loan-amount" className="textinput" type="number" min="0" value={amount} onChange={(e)=>setAmount(e.target.value)}/><label className="field" htmlFor="interest-rate">Annual interest rate (%)</label><input id="interest-rate" className="textinput" type="number" min="0" step="0.1" value={rate} onChange={(e)=>setRate(e.target.value)}/><label className="field" htmlFor="loan-months">Tenure (months)</label><input id="loan-months" className="textinput" type="number" min="1" value={months} onChange={(e)=>setMonths(e.target.value)}/><div className="result">{(()=>{const p=Number(amount),n=Math.max(1,Number(months)),r=Number(rate)/1200,emi=r===0?p/n:p*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);return `Estimated monthly EMI: ₹${emi.toFixed(2)}\nTotal payment: ₹${(emi*n).toFixed(2)}\nTotal interest: ₹${(emi*n-p).toFixed(2)}`})()}</div><p className="hint">Estimate only. Actual lender charges, fees and rounding may differ.</p></>}
