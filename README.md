@@ -1,13 +1,13 @@
 # ToolForge
 
-ToolForge is a browser-first utility platform for media, PDF, image, text, developer and everyday tools.
+ToolForge is a clean, browser-first utility platform for media, PDF, image, text, developer and everyday tools.
 
-## Foundation contract
-The long-term product and architecture rules live in [`docs/TOOLFORGE_BASE.md`](docs/TOOLFORGE_BASE.md). Every new feature must preserve the shared design system, tool registry, route stability, SEO, accessibility, and test expectations.
+## Permanent product contract
+The architecture and release rules live in [docs/TOOLFORGE_BASE.md](docs/TOOLFORGE_BASE.md). Every feature must preserve shared styling, the central tool registry, stable routes, SEO, accessibility and quality checks.
 
 ## Stack
 - Next.js App Router + TypeScript
-- Responsive CSS design system
+- Shared responsive CSS design system
 - Central tool registry and generated tool routes
 - Metadata, canonical URLs, Open Graph, JSON-LD, sitemap and robots.txt
 - Vercel deployment from `main`
@@ -18,8 +18,10 @@ npm install
 npm run dev
 ```
 
-## Current implementation
-The homepage has working category filters and search. Initial working utilities include word counter, case converter, JSON formatter/validator, password generator, GST calculator, EMI calculator, and browser-side image compression/resizing/conversion. Video/PDF/QR tools are listed but their processors are explicitly marked as not enabled yet; they must not be presented as working until implemented and tested.
+## Current tool status
+- **Working browser-side tools:** word counter, case converter, JSON formatter/validator, password generator, QR generator, GST calculator, EMI calculator, image compressor/resizer/converter, image-to-PDF, selectable PDF text extraction, PDF page resizing, typed PDF signature mark, video clipping, video looping and audio extraction from video (browser support varies).
+- **Not yet implemented:** video reverse, OCR for scanned PDFs, true cryptographic/certificate-backed PDF signatures, arbitrary audio/video formats outside browser codecs, PDF-to-Word and advanced PDF editing.
+- **Known limits:** video output is WebM and depends on MediaRecorder/captureStream support; PDF text extraction cannot OCR scanned pages. Typed signature marks are visual annotations, not legal digital-signature certificates.
 
-## Quality gate
-Before release, run `npm run build` and verify tool pages, keyboard navigation, mobile layouts, SEO output, sitemap, robots, and browser-side file handling. Keep URLs stable after indexing.
+## SEO and quality gate
+Tool routes are generated from the central registry and expose per-tool metadata, canonical URLs, internal links, FAQs and SoftwareApplication structured data. Sitemap and robots.txt use the production base URL. Before a release, run `npm run build`, verify keyboard/mobile behavior and test real file samples in a supported browser. Do not call a feature production-ready until the build and deployment pass.
