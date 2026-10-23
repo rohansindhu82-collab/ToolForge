@@ -6,6 +6,7 @@ import type { ToolDefinition } from '@/lib/tools';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import QRCode from 'qrcode';
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url).toString();
 
 type Props = { tool: ToolDefinition };
 export default function ToolWorkspace({ tool }: Props) {
@@ -57,7 +58,7 @@ export default function ToolWorkspace({ tool }: Props) {
         }
         const page = pdf.addPage([image.width,image.height]);
         page.drawImage(image,{x:0,y:0,width:image.width,height:image.height});
-        downloadBlob(new Blob([await pdf.save()],{type:'application/pdf'}),file.name.replace(/\.[^.]+$/,'')+'.pdf');
+        downloadBlob(new Blob([new Uint8Array(await pdf.save()).buffer as ArrayBuffer],{type:'application/pdf'}),file.name.replace(/\.[^.]+$/,'')+'.pdf');
         setStatus('Created a PDF locally. Your image was not uploaded.'); return;
       }
       if (tool.slug === 'pdf-resizer') {
